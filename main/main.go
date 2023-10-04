@@ -1,6 +1,7 @@
 package main
 
 import (
+	"RabbitsSender/dependencies"
 	"encoding/json"
 	"fmt"
 	"github.com/streadway/amqp"
@@ -72,11 +73,11 @@ func main() {
 	for msg := range msgs {
 		fmt.Printf("Получено сообщение: %s\n", msg.Body)
 
-		var messageRecived MessageRecived
+		var messageRecived dependencies.MsgRecived
 		if err := json.Unmarshal(msg.Body, &messageRecived); err != nil {
 			log.Printf("Не удалось декодировать JSON: %v", err)
 			continue
 		}
-		saveToDb(messageRecived)
+		dependencies.SaveToDb(messageRecived)
 	}
 }

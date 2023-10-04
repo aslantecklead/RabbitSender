@@ -1,4 +1,4 @@
-package main
+package dependencies
 
 import (
 	"fmt"
@@ -8,6 +8,13 @@ import (
 )
 
 var db *gorm.DB
+
+type MsgRecived struct {
+	ToEmail   string
+	MsgTitle  string
+	EmailBody string
+	Timestamp int64
+}
 
 type Sender struct {
 	IDSender   int
@@ -55,8 +62,8 @@ func main() {
 	fmt.Println(messagesLogs)
 }
 
-func saveToDb(message MessageRecived) {
-	emailMessage := EmailMessage{
+func SaveToDb(message MsgRecived) {
+	/*emailMessage := EmailMessage{
 		EmailTitle:   message.MsgTitle,
 		EmailBody:    message.EmailBody,
 		ReceiverMail: message.ToEmail,
@@ -66,7 +73,7 @@ func saveToDb(message MessageRecived) {
 	if err := db.Create(&emailMessage).Error; err != nil {
 		log.Printf("Не удалось сохранить данные в базе данных: %v", err)
 		return
-	}
+	}*/
 
 	log.Println("Данные успешно сохранены в базе данных.")
 }
