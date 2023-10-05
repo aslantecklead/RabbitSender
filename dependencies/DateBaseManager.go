@@ -10,10 +10,11 @@ import (
 var db *gorm.DB
 
 type MsgRecived struct {
+	From      string
 	ToEmail   string
 	MsgTitle  string
 	EmailBody string
-	Timestamp int64
+	Timestamp int
 }
 
 type Sender struct {
@@ -38,12 +39,11 @@ type MessagesLogs struct {
 
 func main() {
 	connStr := "host=localhost port=5433 dbname=msgSenderMicroservice user=postgres password=123 sslmode=disable"
-	db, err := gorm.Open("postgres", connStr)
+	var err error
+	db, err = gorm.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
-	defer db.Close()
-
 	db.SingularTable(true)
 
 	var senders []Sender
@@ -62,18 +62,55 @@ func main() {
 	fmt.Println(messagesLogs)
 }
 
-func SaveToDb(message MsgRecived) {
-	/*emailMessage := EmailMessage{
-		EmailTitle:   message.MsgTitle,
-		EmailBody:    message.EmailBody,
-		ReceiverMail: message.ToEmail,
-		IDSender:     0,
+func InitDB() (*gorm.DB, error) {
+	connStr := "host=localhost port=5433 dbname=msgSenderMicroservice user=postgres password=123 sslmode=disable"
+	db, err := gorm.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := db.Create(&emailMessage).Error; err != nil {
-		log.Printf("Не удалось сохранить данные в базе данных: %v", err)
-		return
-	}*/
+	db.AutoMigrate(&Sender{}, &EmailMessage{}, &MessagesLogs{})
 
-	log.Println("Данные успешно сохранены в базе данных.")
+	db.SingularTable(true)
+	return db, nil
+}
+
+func SaveToDb(message MsgRecived) {
+
+	fmt.Println(message)
+
+	var emailMessages []EmailMessage
+	if err := db.Find(&emailMessages).Error; err != nil {
+		log.Printf("Не удалось выполнить SELECT-запрос: %v", err)
+		return
+	}
+	/*
+		sender := Sender{SenderMail: message.From}
+		if err := db.Create(&sender).Error; err != nil {
+			log.Printf("Не удалось создать запись в таблице 'sender': %v", err)
+		}
+
+		// Создать запись в таблице 'email_message'
+		emailMessage := EmailMessage{
+			EmailTitle:   message.MsgTitle,
+			EmailBody:    message.EmailBody,
+			ReceiverMail: message.ToEmail,
+			IDSender:     sender.IDSender,
+		}
+		if err := db.Create(&emailMessage).Error; err != nil {
+			log.Printf("Не удалось создать запись в таблице 'email_message': %v", err)
+		}
+
+		// Создать запись в таблице 'messages_logs'
+		messagesLogs := MessagesLogs{
+			Timestamp:      message.Timestamp,
+			IDEmailMessage: emailMessage.IDEmailMessage,
+		}
+		if err := db.Create(&messagesLogs).Error; err != nil {
+			log.Printf("Не удалось создать запись в таблице 'messages_logs': %v", err)
+		}
+
+		log.Println("Данные успешно сохранены в базе данных.")
+
+	*/
 }

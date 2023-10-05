@@ -25,6 +25,7 @@ type MessagesLogsObj struct {
 }
 
 func main() {
+	dependencies.InitDB()
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к RabbitMQ: %v", err)
@@ -78,6 +79,7 @@ func main() {
 			log.Printf("Не удалось декодировать JSON: %v", err)
 			continue
 		}
+
 		dependencies.SaveToDb(messageRecived)
 	}
 }
