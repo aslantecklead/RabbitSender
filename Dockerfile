@@ -1,17 +1,9 @@
-# Use an official Golang runtime as a parent image
-FROM golang:latest
+FROM golang:1.20.5
 
-# Set the working directory to /app
-WORKDIR /app
+WORKDIR /build
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+COPY ./main/main.go ./build
 
-# Build the Go app
-RUN go build -o main ./main/main.go
+RUN go build -o main main.go
 
-# Change file permissions
-RUN chmod +x /app/main
-
-# Run the Go app
-CMD ["/app/main"]
+CMD ["./main"]
