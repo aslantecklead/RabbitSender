@@ -25,15 +25,15 @@ type sender struct {
 }
 
 type emailmessage struct {
-	ID_EmailMessage int `gorm:"primary_key"`
-	email_title     string
-	email_body      string
-	reciver_mail    string // Исправлено на receiver_mail
+	EmailTitle   string
+	EmailBody    string
+	ReceiverMail string
+	ID_Sender    int
 }
 
 type messageslogs struct {
-	ID_MessagesLogs int   `gorm:"primary_key"`
-	timestamp       int64 // Изменено на int64
+	ID_MessagesLogs int `gorm:"primary_key"`
+	timestamp       int64
 	error_message   string
 }
 
@@ -51,7 +51,6 @@ func InitDB() (*gorm.DB, error) {
 }
 
 func SaveToDb(d *gorm.DB, messageBytes []byte) {
-
 	fmt.Printf("Получено сообщение: %s\n", messageBytes)
 
 	var message MsgRecived
@@ -60,14 +59,38 @@ func SaveToDb(d *gorm.DB, messageBytes []byte) {
 		return
 	}
 
+	// Начать транзакцию
+	tx := d.Begin()
+	if tx.Error != nil {
+		log.Printf("Ошибка при начале транзакции: %v", tx.Error)
+		return
+	}
+
 	senderRecord := sender{
 		Sender_mail: message.FromEmail,
 	}
 
+	if err := tx.Create(&senderRecord).Error; err != nil {
+		// Откатить транзакцию в случае ошибки
+		tx.Rollback()
+		log.Printf("Ошибка при сохранении в таблице 'sender': %v", err)
+		return
+	}
+
+	senderID := senderRecord.ID_Sender
+
 	emailMessageRecord := emailmessage{
-		email_title:  message.MsgTitle,
-		email_body:   message.EmailBody,
-		reciver_mail: message.ToEmail,
+		EmailTitle:   message.MsgTitle,
+		EmailBody:    message.EmailBody,
+		ReceiverMail: message.ToEmail,
+		ID_Sender:    senderID, // Используйте полученный ID отправителя
+	}
+
+	if err := tx.Create(&emailMessageRecord).Error; err != nil {
+		// Откатить транзакцию в случае ошибки
+		tx.Rollback()
+		log.Printf("Ошибка при сохранении в таблице 'emailmessage': %v", err)
+		return
 	}
 
 	messageslogsRecord := messageslogs{
@@ -75,15 +98,13 @@ func SaveToDb(d *gorm.DB, messageBytes []byte) {
 		error_message: message.ErrorMessage,
 	}
 
-	if err := d.Create(&senderRecord).Error; err != nil {
-		log.Printf("Ошибка при сохранении в таблице 'sender': %v", err)
-	}
-
-	if err := d.Create(&emailMessageRecord).Error; err != nil {
-		log.Printf("Ошибка при сохранении в таблице 'emailmessage': %v", err)
-	}
-
-	if err := d.Create(&messageslogsRecord).Error; err != nil {
+	if err := tx.Create(&messageslogsRecord).Error; err != nil {
+		// Откатить транзакцию в случае ошибки
+		tx.Rollback()
 		log.Printf("Ошибка при сохранении в таблице 'messageslogs': %v", err)
+		return
 	}
+
+	// Завершить транзакцию
+	tx.Commit()
 }
