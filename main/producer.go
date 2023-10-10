@@ -1,6 +1,7 @@
 package main
 
 import (
+	"RabbitsSender/dependencies"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,13 @@ type Message struct {
 }
 
 func main() {
+	db, err := dependencies.InitDB()
+	if err != nil {
+		log.Fatalf("Ошибка при инициализации базы данных: %v", err)
+		return
+	}
+	defer db.Close()
+
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к RabbitMQ: %v", err)

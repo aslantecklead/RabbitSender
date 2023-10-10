@@ -1,6 +1,7 @@
 package dependencies
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -10,56 +11,30 @@ import (
 var db *gorm.DB
 
 type MsgRecived struct {
-	From      string
-	ToEmail   string
-	MsgTitle  string
-	EmailBody string
-	Timestamp int
+	FromEmail    string `json:"From_Email"`
+	ToEmail      string `json:"To_Email"`
+	MsgTitle     string `json:"MsgTitle"`
+	EmailBody    string `json:"EmailBody"`
+	Timestamp    int    `json:"Timestamp"`
+	ErrorMessage string `json:"Error_message"`
 }
 
-type Sender struct {
-	IDSender   int
-	SenderMail string
+type sender struct {
+	ID_Sender   int `gorm:"primary_key"`
+	Sender_mail string
 }
 
-type EmailMessage struct {
-	IDEmailMessage int
-	EmailTitle     string
-	EmailBody      string
-	ReceiverMail   string
-	IDSender       int
+type emailmessage struct {
+	ID_EmailMessage int `gorm:"primary_key"`
+	email_title     string
+	email_body      string
+	reciver_mail    string // Исправлено на receiver_mail
 }
 
-type MessagesLogs struct {
-	IDMessagesLogs int
-	Timestamp      int
-	ErrorMessage   string
-	IDEmailMessage int
-}
-
-func main() {
-	connStr := "host=localhost port=5433 dbname=msgSenderMicroservice user=postgres password=123 sslmode=disable"
-	var err error
-	db, err = gorm.Open("postgres", connStr)
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-	db.SingularTable(true)
-
-	var senders []Sender
-	db.Find(&senders)
-	fmt.Println("Senders:")
-	fmt.Println(senders)
-
-	var emailMessages []EmailMessage
-	db.Find(&emailMessages)
-	fmt.Println("Email Messages:")
-	fmt.Println(emailMessages)
-
-	var messagesLogs []MessagesLogs
-	db.Find(&messagesLogs)
-	fmt.Println("Messages Logs:")
-	fmt.Println(messagesLogs)
+type messageslogs struct {
+	ID_MessagesLogs int   `gorm:"primary_key"`
+	timestamp       int64 // Изменено на int64
+	error_message   string
 }
 
 func InitDB() (*gorm.DB, error) {
@@ -69,48 +44,46 @@ func InitDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	db.AutoMigrate(&Sender{}, &EmailMessage{}, &MessagesLogs{})
+	db.AutoMigrate(&sender{}, &emailmessage{}, &messageslogs{})
 
 	db.SingularTable(true)
 	return db, nil
 }
 
-func SaveToDb(message MsgRecived) {
+func SaveToDb(d *gorm.DB, messageBytes []byte) {
 
-	fmt.Println(message)
+	fmt.Printf("Получено сообщение: %s\n", messageBytes)
 
-	var emailMessages []EmailMessage
-	if err := db.Find(&emailMessages).Error; err != nil {
-		log.Printf("Не удалось выполнить SELECT-запрос: %v", err)
+	var message MsgRecived
+	if err := json.Unmarshal(messageBytes, &message); err != nil {
+		log.Printf("Ошибка разбора JSON: %v", err)
 		return
 	}
-	/*
-		sender := Sender{SenderMail: message.From}
-		if err := db.Create(&sender).Error; err != nil {
-			log.Printf("Не удалось создать запись в таблице 'sender': %v", err)
-		}
 
-		// Создать запись в таблице 'email_message'
-		emailMessage := EmailMessage{
-			EmailTitle:   message.MsgTitle,
-			EmailBody:    message.EmailBody,
-			ReceiverMail: message.ToEmail,
-			IDSender:     sender.IDSender,
-		}
-		if err := db.Create(&emailMessage).Error; err != nil {
-			log.Printf("Не удалось создать запись в таблице 'email_message': %v", err)
-		}
+	senderRecord := sender{
+		Sender_mail: message.FromEmail,
+	}
 
-		// Создать запись в таблице 'messages_logs'
-		messagesLogs := MessagesLogs{
-			Timestamp:      message.Timestamp,
-			IDEmailMessage: emailMessage.IDEmailMessage,
-		}
-		if err := db.Create(&messagesLogs).Error; err != nil {
-			log.Printf("Не удалось создать запись в таблице 'messages_logs': %v", err)
-		}
+	emailMessageRecord := emailmessage{
+		email_title:  message.MsgTitle,
+		email_body:   message.EmailBody,
+		reciver_mail: message.ToEmail,
+	}
 
-		log.Println("Данные успешно сохранены в базе данных.")
+	messageslogsRecord := messageslogs{
+		timestamp:     int64(message.Timestamp),
+		error_message: message.ErrorMessage,
+	}
 
-	*/
+	if err := d.Create(&senderRecord).Error; err != nil {
+		log.Printf("Ошибка при сохранении в таблице 'sender': %v", err)
+	}
+
+	if err := d.Create(&emailMessageRecord).Error; err != nil {
+		log.Printf("Ошибка при сохранении в таблице 'emailmessage': %v", err)
+	}
+
+	if err := d.Create(&messageslogsRecord).Error; err != nil {
+		log.Printf("Ошибка при сохранении в таблице 'messageslogs': %v", err)
+	}
 }

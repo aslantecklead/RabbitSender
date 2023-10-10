@@ -25,7 +25,13 @@ type MessagesLogsObj struct {
 }
 
 func main() {
-	dependencies.InitDB()
+	db, err := dependencies.InitDB()
+	if err != nil {
+		log.Fatalf("Ошибка при инициализации базы данных: %v", err)
+		return
+	}
+	defer db.Close()
+
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		log.Fatalf("Не удалось подключиться к RabbitMQ: %v", err)
@@ -72,14 +78,12 @@ func main() {
 	}
 
 	for msg := range msgs {
-		fmt.Printf("Получено сообщение: %s\n", msg.Body)
-
 		var messageRecived dependencies.MsgRecived
 		if err := json.Unmarshal(msg.Body, &messageRecived); err != nil {
 			log.Printf("Не удалось декодировать JSON: %v", err)
 			continue
 		}
 
-		//dependencies.SaveToDb(messageRecived)
+		dependencies.SaveToDb(db, msg.Body)
 	}
 }

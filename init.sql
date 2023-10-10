@@ -1,20 +1,24 @@
-CREATE TABLE IF NOT EXISTS MsgRecived (
-                                          FromEmail text NULL,
-                                          ToEmail text NULL,
-                                          MsgTitle text NULL,
-                                          EmailBody text NULL,
-                                          Timestamp int NULL
+-- Создаем таблицу Sender
+CREATE TABLE sender (
+                        ID_Sender serial PRIMARY KEY,
+                        Sender_mail text NULL
 );
 
-CREATE TABLE IF NOT EXISTS Sender (
-                                      IDSender serial PRIMARY KEY,
-                                      SenderMail text NULL
+-- Создаем таблицу EmailMessage
+CREATE TABLE emailmessage (
+                              id_email_message serial PRIMARY KEY,
+                              email_title text NULL,
+                              email_body text NULL,
+                              receiver_mail text NULL,
+                              ID_Sender int NULL,
+                              FOREIGN KEY (ID_Sender) REFERENCES Sender(ID_Sender)
 );
 
-CREATE TABLE IF NOT EXISTS EmailMessage (
-                                            IDEmailMessage serial PRIMARY KEY,
-                                            EmailTitle text NULL,
-                                            EmailBody text NULL,
-                                            ReceiverMail text NULL,
-                                            IDSender int NULL
+-- Создаем таблицу MessagesLogs
+CREATE TABLE messageslogs (
+                              ID_MessagesLogs serial PRIMARY KEY,
+                              timestamp timestamp NULL,
+                              error_message text NULL,
+                              id_email_message int NULL,
+                              FOREIGN KEY (id_email_message) REFERENCES EmailMessage(id_email_message)
 );
