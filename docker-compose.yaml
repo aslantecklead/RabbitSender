@@ -1,26 +1,31 @@
-version : '3'
+version: '3'
 
 services:
-  postgres:
-    image: postgres
-    restart: always
-    container_name: postgres-db
+  db:
+    image: postgres:latest
+    container_name: my_postgres
     environment:
-      POSTGRES_PASSWORD: 123
-      POSTGRES_USER: postgres
-      POSTGRES_DB: msgSenderMicroservice
-      POSTGRES_HOST: 8080
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgressql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: my_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   adminer:
     image: adminer
-    restart: always
-    container_name: adminer
+    container_name: my_adminer
     ports:
-      - "8097:8080"
-    depends_on:
-      - postgres
+      - "8082:8080"
+
 volumes:
-  postgres-data:
+  postgres_data:

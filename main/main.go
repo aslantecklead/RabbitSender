@@ -80,6 +80,6 @@ func main() {
 			continue
 		}
 
-		dependencies.SaveToDb(messageRecived)
+		//dependencies.SaveToDb(messageRecived)
 	}
 }
