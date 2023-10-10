@@ -9,6 +9,7 @@ services:
       POSTGRES_PASSWORD: 123
       POSTGRES_USER: postgres
       POSTGRES_DB: msgSenderMicroservice
+      POSTGRES_HOST: 8080
     ports:
       - "5432:5432"
     volumes:
