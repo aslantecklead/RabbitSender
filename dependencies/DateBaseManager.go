@@ -2,7 +2,6 @@ package dependencies
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"log"
@@ -51,7 +50,7 @@ func InitDB() (*gorm.DB, error) {
 }
 
 func SaveToDb(d *gorm.DB, messageBytes []byte) {
-	fmt.Printf("Получено сообщение: %s\n", messageBytes)
+	//fmt.Printf("Получено сообщение: %s\n", messageBytes)
 
 	var message MsgRecived
 	if err := json.Unmarshal(messageBytes, &message); err != nil {
@@ -99,7 +98,6 @@ func SaveToDb(d *gorm.DB, messageBytes []byte) {
 	}
 
 	if err := tx.Create(&messageslogsRecord).Error; err != nil {
-		// Откатить транзакцию в случае ошибки
 		tx.Rollback()
 		log.Printf("Ошибка при сохранении в таблице 'messageslogs': %v", err)
 		return
@@ -107,4 +105,5 @@ func SaveToDb(d *gorm.DB, messageBytes []byte) {
 
 	// Завершить транзакцию
 	tx.Commit()
+	SendEmail(messageBytes)
 }
